@@ -17,6 +17,7 @@ export default function FishermenPage() {
   const [search, setSearch] = useState('');
   const [editing, setEditing] = useState<Partial<Fisherman> | null>(null);
   const [open, setOpen] = useState(false);
+  const [advancePayment, setAdvancePayment] = useState('');
   const navigate = useNavigate();
 
   const load = async () => setFishermen(await getFishermen());
