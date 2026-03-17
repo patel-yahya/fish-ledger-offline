@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { getFishermen, addFisherman, updateFisherman, deleteFisherman, type Fisherman } from '@/lib/database';
+import { getFishermen, addFisherman, updateFisherman, deleteFisherman, addManualTransaction, type Fisherman } from '@/lib/database';
+import { todayISO } from '@/lib/format';
 import { formatINR } from '@/lib/format';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -16,6 +17,7 @@ export default function FishermenPage() {
   const [search, setSearch] = useState('');
   const [editing, setEditing] = useState<Partial<Fisherman> | null>(null);
   const [open, setOpen] = useState(false);
+  const [advancePayment, setAdvancePayment] = useState('');
   const navigate = useNavigate();
 
   const load = async () => setFishermen(await getFishermen());
@@ -28,12 +30,24 @@ export default function FishermenPage() {
 
   const handleSave = async () => {
     if (!editing?.name?.trim()) { toast.error('Name is required'); return; }
-    if (editing.id) await updateFisherman(editing);
-    else await addFisherman(editing);
+    const isNew = !editing.id;
+    if (isNew) {
+      await addFisherman(editing);
+      if (Number(advancePayment) > 0) {
+        const all = await getFishermen();
+        const created = all.find(f => f.name === editing.name);
+        if (created) {
+          await addManualTransaction(created.id, Number(advancePayment), 0, todayISO(), 'Advance payment');
+        }
+      }
+    } else {
+      await updateFisherman(editing);
+    }
     setOpen(false);
     setEditing(null);
+    setAdvancePayment('');
     await load();
-    toast.success(editing.id ? 'Updated' : 'Added');
+    toast.success(isNew ? 'Added' : 'Updated');
   };
 
   const handleDelete = async (id: number) => {
@@ -60,6 +74,13 @@ export default function FishermenPage() {
               <div><Label>Phone</Label><Input value={editing?.phone || ''} onChange={e => setEditing(p => ({ ...p, phone: e.target.value }))} /></div>
               <div><Label>Village</Label><Input value={editing?.village || ''} onChange={e => setEditing(p => ({ ...p, village: e.target.value }))} /></div>
               <div><Label>Notes</Label><Textarea value={editing?.notes || ''} onChange={e => setEditing(p => ({ ...p, notes: e.target.value }))} /></div>
+              {!editing?.id && (
+                <div>
+                  <Label>Advance Payment (optional)</Label>
+                  <Input type="number" value={advancePayment} onChange={e => setAdvancePayment(e.target.value)} placeholder="₹ 0" />
+                  <p className="text-[10px] text-muted-foreground mt-1">Cash given upfront, recorded as first transaction</p>
+                </div>
+              )}
               <Button onClick={handleSave} className="w-full">Save</Button>
             </div>
           </DialogContent>

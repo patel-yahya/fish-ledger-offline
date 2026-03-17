@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Fish, Home, Users, Layers, ClipboardList, ArrowLeftRight, Download, Upload, Menu, X } from 'lucide-react';
+import { Fish, Home, Users, ClipboardList, ArrowLeftRight, Download, Menu, X, Receipt } from 'lucide-react';
 
 const navItems = [
   { to: '/', icon: Home, label: 'Dashboard' },
   { to: '/fishermen', icon: Users, label: 'Fishermen' },
   { to: '/species', icon: Fish, label: 'Species' },
   { to: '/passes', icon: ClipboardList, label: 'Passes' },
+  { to: '/transactions', icon: Receipt, label: 'Transactions' },
   { to: '/settlement', icon: ArrowLeftRight, label: 'Settlement' },
   { to: '/data', icon: Download, label: 'Data' },
 ];
@@ -56,7 +57,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
       {/* Bottom Nav for mobile */}
       <nav className="fixed bottom-0 left-0 right-0 z-40 bg-card border-t border-border flex justify-around py-1.5 ledger-shadow sm:hidden">
-        {navItems.slice(0, 5).map(item => (
+        {navItems.slice(0, 6).map(item => (
           <Link
             key={item.to}
             to={item.to}

@@ -8,6 +8,7 @@ import FishermenPage from "./pages/FishermenPage";
 import FishermanDetail from "./pages/FishermanDetail";
 import SpeciesPage from "./pages/SpeciesPage";
 import PassesPage from "./pages/PassesPage";
+import TransactionsPage from "./pages/TransactionsPage";
 import SettlementPage from "./pages/SettlementPage";
 import DataPage from "./pages/DataPage";
 import NotFound from "./pages/NotFound";
@@ -26,6 +27,7 @@ const App = () => (
             <Route path="/fishermen/:id" element={<FishermanDetail />} />
             <Route path="/species" element={<SpeciesPage />} />
             <Route path="/passes" element={<PassesPage />} />
+            <Route path="/transactions" element={<TransactionsPage />} />
             <Route path="/settlement" element={<SettlementPage />} />
             <Route path="/data" element={<DataPage />} />
             <Route path="*" element={<NotFound />} />

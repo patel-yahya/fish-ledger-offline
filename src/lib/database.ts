@@ -351,6 +351,32 @@ export async function settlePass(
   saveDb();
 }
 
+export async function addManualTransaction(
+  fishermanId: number, cashPaid: number, totalFishValue: number, date: string, notes: string
+): Promise<void> {
+  const d = await getDb();
+  const bRes = d.exec('SELECT running_balance FROM fishermen WHERE id=?', [fishermanId]);
+  const oldBalance = bRes[0].values[0][0] as number;
+  const newBalance = oldBalance + (cashPaid - totalFishValue);
+  d.run(`INSERT INTO transactions (fisherman_id, date, total_fish_value, cash_paid, old_balance, new_balance, notes)
+         VALUES (?,?,?,?,?,?,?)`,
+    [fishermanId, date, totalFishValue, cashPaid, oldBalance, newBalance, notes]);
+  d.run('UPDATE fishermen SET running_balance=? WHERE id=?', [newBalance, fishermanId]);
+  saveDb();
+}
+
+export async function updateTransaction(
+  id: number, cashPaid: number, totalFishValue: number, date: string, notes: string
+): Promise<void> {
+  const d = await getDb();
+  d.run('UPDATE transactions SET cash_paid=?, total_fish_value=?, date=?, notes=? WHERE id=?',
+    [cashPaid, totalFishValue, date, notes, id]);
+  const tRes = d.exec('SELECT fisherman_id FROM transactions WHERE id=?', [id]);
+  if (tRes.length) {
+    await recalculateBalance(tRes[0].values[0][0] as number);
+  }
+}
+
 export async function deleteTransaction(id: number): Promise<void> {
   const d = await getDb();
   // Get transaction info to revert balance
