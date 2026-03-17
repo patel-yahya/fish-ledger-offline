@@ -57,7 +57,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
       {/* Bottom Nav for mobile */}
       <nav className="fixed bottom-0 left-0 right-0 z-40 bg-card border-t border-border flex justify-around py-1.5 ledger-shadow sm:hidden">
-        {navItems.slice(0, 5).map(item => (
+        {navItems.slice(0, 6).map(item => (
           <Link
             key={item.to}
             to={item.to}

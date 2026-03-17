@@ -74,6 +74,13 @@ export default function FishermenPage() {
               <div><Label>Phone</Label><Input value={editing?.phone || ''} onChange={e => setEditing(p => ({ ...p, phone: e.target.value }))} /></div>
               <div><Label>Village</Label><Input value={editing?.village || ''} onChange={e => setEditing(p => ({ ...p, village: e.target.value }))} /></div>
               <div><Label>Notes</Label><Textarea value={editing?.notes || ''} onChange={e => setEditing(p => ({ ...p, notes: e.target.value }))} /></div>
+              {!editing?.id && (
+                <div>
+                  <Label>Advance Payment (optional)</Label>
+                  <Input type="number" value={advancePayment} onChange={e => setAdvancePayment(e.target.value)} placeholder="₹ 0" />
+                  <p className="text-[10px] text-muted-foreground mt-1">Cash given upfront, recorded as first transaction</p>
+                </div>
+              )}
               <Button onClick={handleSave} className="w-full">Save</Button>
             </div>
           </DialogContent>
