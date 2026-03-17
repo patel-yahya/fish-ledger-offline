@@ -7,6 +7,7 @@ const navItems = [
   { to: '/fishermen', icon: Users, label: 'Fishermen' },
   { to: '/species', icon: Fish, label: 'Species' },
   { to: '/passes', icon: ClipboardList, label: 'Passes' },
+  { to: '/transactions', icon: Receipt, label: 'Transactions' },
   { to: '/settlement', icon: ArrowLeftRight, label: 'Settlement' },
   { to: '/data', icon: Download, label: 'Data' },
 ];
