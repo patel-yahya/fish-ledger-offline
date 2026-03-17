@@ -30,12 +30,24 @@ export default function FishermenPage() {
 
   const handleSave = async () => {
     if (!editing?.name?.trim()) { toast.error('Name is required'); return; }
-    if (editing.id) await updateFisherman(editing);
-    else await addFisherman(editing);
+    const isNew = !editing.id;
+    if (isNew) {
+      await addFisherman(editing);
+      if (Number(advancePayment) > 0) {
+        const all = await getFishermen();
+        const created = all.find(f => f.name === editing.name);
+        if (created) {
+          await addManualTransaction(created.id, Number(advancePayment), 0, todayISO(), 'Advance payment');
+        }
+      }
+    } else {
+      await updateFisherman(editing);
+    }
     setOpen(false);
     setEditing(null);
+    setAdvancePayment('');
     await load();
-    toast.success(editing.id ? 'Updated' : 'Added');
+    toast.success(isNew ? 'Added' : 'Updated');
   };
 
   const handleDelete = async (id: number) => {
