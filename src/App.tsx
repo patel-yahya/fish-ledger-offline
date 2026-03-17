@@ -8,6 +8,7 @@ import FishermenPage from "./pages/FishermenPage";
 import FishermanDetail from "./pages/FishermanDetail";
 import SpeciesPage from "./pages/SpeciesPage";
 import PassesPage from "./pages/PassesPage";
+import TransactionsPage from "./pages/TransactionsPage";
 import SettlementPage from "./pages/SettlementPage";
 import DataPage from "./pages/DataPage";
 import NotFound from "./pages/NotFound";
