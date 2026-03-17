@@ -1,25 +1,42 @@
 import initSqlJs, { Database } from 'sql.js';
+import sqlWasmUrl from 'sql.js/dist/sql-wasm.wasm?url';
 
 let db: Database | null = null;
+let dbPromise: Promise<Database> | null = null;
 const DB_KEY = 'chand_fish_ledger_db';
 
 export async function getDb(): Promise<Database> {
   if (db) return db;
+  if (dbPromise) return dbPromise;
 
-  const SQL = await initSqlJs({
-    locateFile: (file: string) => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.3/${file}`,
-  });
+  dbPromise = (async () => {
+    const SQL = await initSqlJs({
+      locateFile: () => sqlWasmUrl,
+    });
 
-  const saved = localStorage.getItem(DB_KEY);
-  if (saved) {
-    const buf = Uint8Array.from(atob(saved), c => c.charCodeAt(0));
-    db = new SQL.Database(buf);
-  } else {
-    db = new SQL.Database();
+    const saved = localStorage.getItem(DB_KEY);
+    if (saved) {
+      try {
+        const buf = Uint8Array.from(atob(saved), c => c.charCodeAt(0));
+        db = new SQL.Database(buf);
+      } catch (error) {
+        console.error('Failed to restore local database, creating a new one.', error);
+        localStorage.removeItem(DB_KEY);
+        db = new SQL.Database();
+      }
+    } else {
+      db = new SQL.Database();
+    }
+
+    initTables(db);
+    return db;
+  })();
+
+  try {
+    return await dbPromise;
+  } finally {
+    dbPromise = null;
   }
-
-  initTables(db);
-  return db;
 }
 
 function initTables(db: Database) {
