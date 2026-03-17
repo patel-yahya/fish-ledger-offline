@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Fish, Home, Users, Layers, ClipboardList, ArrowLeftRight, Download, Upload, Menu, X } from 'lucide-react';
+import { Fish, Home, Users, ClipboardList, ArrowLeftRight, Download, Menu, X, Receipt } from 'lucide-react';
 
 const navItems = [
   { to: '/', icon: Home, label: 'Dashboard' },
