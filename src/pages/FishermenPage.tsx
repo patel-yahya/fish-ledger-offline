@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { getFishermen, addFisherman, updateFisherman, deleteFisherman, type Fisherman } from '@/lib/database';
+import { getFishermen, addFisherman, updateFisherman, deleteFisherman, addManualTransaction, type Fisherman } from '@/lib/database';
+import { todayISO } from '@/lib/format';
 import { formatINR } from '@/lib/format';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
