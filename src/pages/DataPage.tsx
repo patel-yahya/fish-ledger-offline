@@ -15,26 +15,19 @@ export default function DataPage() {
       const data = await exportAllData();
       const wb = XLSX.utils.book_new();
 
-      if (data.fishermen.length) {
-        const ws = XLSX.utils.aoa_to_sheet([data.fishermen[0].columns, ...data.fishermen[0].values]);
-        XLSX.utils.book_append_sheet(wb, ws, 'Fishermen');
-      }
-      if (data.species.length) {
-        const ws = XLSX.utils.aoa_to_sheet([data.species[0].columns, ...data.species[0].values]);
-        XLSX.utils.book_append_sheet(wb, ws, 'Species');
-      }
-      if (data.passes.length) {
-        const ws = XLSX.utils.aoa_to_sheet([data.passes[0].columns, ...data.passes[0].values]);
-        XLSX.utils.book_append_sheet(wb, ws, 'Passes');
-      }
-      if (data.items.length) {
-        const ws = XLSX.utils.aoa_to_sheet([data.items[0].columns, ...data.items[0].values]);
-        XLSX.utils.book_append_sheet(wb, ws, 'Pass Items');
-      }
-      if (data.transactions.length) {
-        const ws = XLSX.utils.aoa_to_sheet([data.transactions[0].columns, ...data.transactions[0].values]);
-        XLSX.utils.book_append_sheet(wb, ws, 'Transactions');
-      }
+      const addSheet = (name: string, result: any[]) => {
+        if (result.length) {
+          const ws = XLSX.utils.aoa_to_sheet([result[0].columns, ...result[0].values]);
+          XLSX.utils.book_append_sheet(wb, ws, name);
+        }
+      };
+
+      addSheet('Fishermen', data.fishermen);
+      addSheet('Species', data.species);
+      addSheet('Passes', data.passes);
+      addSheet('Pass Items', data.items);
+      addSheet('Transactions', data.transactions);
+      addSheet('Transaction Passes', data.transactionPasses);
 
       const buf = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
       const blob = new Blob([buf], { type: 'application/octet-stream' });
@@ -56,27 +49,140 @@ export default function DataPage() {
       const wb = XLSX.read(buf);
       const db = await getDb();
 
-      // Import Fishermen
+      // Helper to find a value case-insensitively
+      const val = (r: any, ...keys: string[]) => {
+        for (const k of keys) {
+          if (r[k] !== undefined) return r[k];
+          const lk = k.toLowerCase();
+          const found = Object.keys(r).find(rk => rk.toLowerCase() === lk);
+          if (found && r[found] !== undefined) return r[found];
+        }
+        return '';
+      };
+
+      // 1. Import Fishermen - build name→id map
+      const fishMap = new Map<string, number>();
       const fishSheet = wb.Sheets['Fishermen'];
       if (fishSheet) {
         const rows = XLSX.utils.sheet_to_json<any>(fishSheet);
         for (const r of rows) {
+          const name = val(r, 'name', 'Name');
+          if (!name) continue;
           db.run('INSERT OR IGNORE INTO fishermen (name, phone, village, notes, running_balance) VALUES (?,?,?,?,?)',
-            [r.name || r.Name, r.phone || '', r.village || '', r.notes || '', r.running_balance || 0]);
+            [name, val(r, 'phone') || '', val(r, 'village') || '', val(r, 'notes') || '', Number(val(r, 'running_balance')) || 0]);
+        }
+      }
+      // Build fisherman name→id lookup
+      const fRes = db.exec('SELECT id, name FROM fishermen');
+      if (fRes.length) {
+        for (const row of fRes[0].values) {
+          fishMap.set((row[1] as string).toLowerCase(), row[0] as number);
         }
       }
 
-      // Import Species
+      // 2. Import Species - build name→id map
+      const specMap = new Map<string, number>();
       const specSheet = wb.Sheets['Species'];
       if (specSheet) {
         const rows = XLSX.utils.sheet_to_json<any>(specSheet);
         for (const r of rows) {
-          db.run('INSERT OR IGNORE INTO species (name) VALUES (?)', [r.name || r.Name]);
+          const name = val(r, 'name', 'Name');
+          if (!name) continue;
+          db.run('INSERT OR IGNORE INTO species (name) VALUES (?)', [name]);
+        }
+      }
+      const sRes = db.exec('SELECT id, name FROM species');
+      if (sRes.length) {
+        for (const row of sRes[0].values) {
+          specMap.set((row[1] as string).toLowerCase(), row[0] as number);
+        }
+      }
+
+      // 3. Import Passes - build pass_id→new db id map
+      const passMap = new Map<string, number>();
+      const passSheet = wb.Sheets['Passes'];
+      if (passSheet) {
+        const rows = XLSX.utils.sheet_to_json<any>(passSheet);
+        for (const r of rows) {
+          const passId = String(val(r, 'pass_id'));
+          const fishName = val(r, 'fisherman_name');
+          const fishId = fishMap.get(String(fishName).toLowerCase());
+          if (!fishId || !passId) continue;
+          db.run('INSERT INTO passes (pass_id, fisherman_id, date, status, notes) VALUES (?,?,?,?,?)',
+            [passId, fishId, val(r, 'date') || '', val(r, 'status') || 'pending', val(r, 'notes') || '']);
+          const idRes = db.exec('SELECT last_insert_rowid()');
+          passMap.set(passId, idRes[0].values[0][0] as number);
+        }
+      }
+
+      // 4. Import Pass Items
+      const itemSheet = wb.Sheets['Pass Items'];
+      if (itemSheet) {
+        const rows = XLSX.utils.sheet_to_json<any>(itemSheet);
+        for (const r of rows) {
+          // pass_id in export is the original db id, but we stored pass_id (text) in passes
+          // We need to find the new pass db id. The export has pass_id as the DB integer id.
+          // But our passMap is keyed by pass_id text. Let's try matching.
+          const specName = val(r, 'species_name');
+          const specId = specMap.get(String(specName).toLowerCase());
+          // Try to find the pass by looking up original pass_id column
+          const origPassDbId = val(r, 'pass_id');
+          // We need to find which pass_id text corresponds to this db id from the export
+          // Since the passes sheet has 'id' and 'pass_id', let's build a reverse map
+          let newPassDbId: number | undefined;
+          // Search passMap values - we'll build a secondary map from export
+          if (!newPassDbId) {
+            // Fallback: try to find by iterating passes sheet data
+            const passRows = passSheet ? XLSX.utils.sheet_to_json<any>(passSheet) : [];
+            const matchedPass = passRows.find((p: any) => val(p, 'id') == origPassDbId);
+            if (matchedPass) {
+              newPassDbId = passMap.get(String(val(matchedPass, 'pass_id')));
+            }
+          }
+          if (!newPassDbId || !specId) continue;
+          db.run('INSERT INTO pass_items (pass_id, species_id, quantity, unit, price_per_unit, total) VALUES (?,?,?,?,?,?)',
+            [newPassDbId, specId, Number(val(r, 'quantity')) || 0, val(r, 'unit') || 'kg',
+             Number(val(r, 'price_per_unit')) || 0, Number(val(r, 'total')) || 0]);
+        }
+      }
+
+      // 5. Import Transactions
+      const txMap = new Map<number, number>(); // old id → new id
+      const txSheet = wb.Sheets['Transactions'];
+      if (txSheet) {
+        const rows = XLSX.utils.sheet_to_json<any>(txSheet);
+        for (const r of rows) {
+          const fishName = val(r, 'fisherman_name');
+          const fishId = fishMap.get(String(fishName).toLowerCase());
+          if (!fishId) continue;
+          const oldId = Number(val(r, 'id'));
+          db.run(`INSERT INTO transactions (fisherman_id, date, total_fish_value, cash_paid, old_balance, new_balance, notes)
+                  VALUES (?,?,?,?,?,?,?)`,
+            [fishId, val(r, 'date') || '', Number(val(r, 'total_fish_value')) || 0,
+             Number(val(r, 'cash_paid')) || 0, Number(val(r, 'old_balance')) || 0,
+             Number(val(r, 'new_balance')) || 0, val(r, 'notes') || '']);
+          const idRes = db.exec('SELECT last_insert_rowid()');
+          txMap.set(oldId, idRes[0].values[0][0] as number);
+        }
+      }
+
+      // 6. Import Transaction-Pass links
+      const tpSheet = wb.Sheets['Transaction Passes'];
+      if (tpSheet) {
+        const rows = XLSX.utils.sheet_to_json<any>(tpSheet);
+        for (const r of rows) {
+          const oldTxId = Number(val(r, 'transaction_id'));
+          const passIdText = String(val(r, 'pass_id'));
+          const newTxId = txMap.get(oldTxId);
+          const newPassId = passMap.get(passIdText);
+          if (newTxId && newPassId) {
+            db.run('INSERT INTO transaction_passes (transaction_id, pass_id) VALUES (?,?)', [newTxId, newPassId]);
+          }
         }
       }
 
       saveDb();
-      toast.success('Data imported! Refresh to see changes.');
+      toast.success('All data imported! Refreshing...');
       window.location.reload();
     } catch (err) {
       toast.error('Import failed. Check file format.');

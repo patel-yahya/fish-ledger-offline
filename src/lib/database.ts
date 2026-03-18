@@ -438,12 +438,14 @@ export async function exportAllData() {
   const d = await getDb();
   const fishermen = d.exec('SELECT * FROM fishermen');
   const species = d.exec('SELECT * FROM species');
-  const passes = d.exec(`SELECT p.id, p.pass_id, f.name, p.date, p.status, p.notes 
+  const passes = d.exec(`SELECT p.id, p.pass_id, f.name as fisherman_name, p.date, p.status, p.notes 
     FROM passes p JOIN fishermen f ON p.fisherman_id=f.id ORDER BY p.date`);
-  const items = d.exec(`SELECT pi.pass_id, s.name, pi.quantity, pi.unit, pi.price_per_unit, pi.total 
+  const items = d.exec(`SELECT pi.id, pi.pass_id, s.name as species_name, pi.quantity, pi.unit, pi.price_per_unit, pi.total 
     FROM pass_items pi JOIN species s ON pi.species_id=s.id`);
-  const transactions = d.exec(`SELECT t.id, f.name, t.date, t.total_fish_value, t.cash_paid, t.old_balance, t.new_balance, t.notes
+  const transactions = d.exec(`SELECT t.id, f.name as fisherman_name, t.date, t.total_fish_value, t.cash_paid, t.old_balance, t.new_balance, t.notes
     FROM transactions t JOIN fishermen f ON t.fisherman_id=f.id ORDER BY t.date`);
+  const transactionPasses = d.exec(`SELECT tp.transaction_id, p.pass_id 
+    FROM transaction_passes tp JOIN passes p ON tp.pass_id=p.id`);
 
-  return { fishermen, species, passes, items, transactions };
+  return { fishermen, species, passes, items, transactions, transactionPasses };
 }
