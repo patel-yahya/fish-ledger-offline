@@ -15,26 +15,19 @@ export default function DataPage() {
       const data = await exportAllData();
       const wb = XLSX.utils.book_new();
 
-      if (data.fishermen.length) {
-        const ws = XLSX.utils.aoa_to_sheet([data.fishermen[0].columns, ...data.fishermen[0].values]);
-        XLSX.utils.book_append_sheet(wb, ws, 'Fishermen');
-      }
-      if (data.species.length) {
-        const ws = XLSX.utils.aoa_to_sheet([data.species[0].columns, ...data.species[0].values]);
-        XLSX.utils.book_append_sheet(wb, ws, 'Species');
-      }
-      if (data.passes.length) {
-        const ws = XLSX.utils.aoa_to_sheet([data.passes[0].columns, ...data.passes[0].values]);
-        XLSX.utils.book_append_sheet(wb, ws, 'Passes');
-      }
-      if (data.items.length) {
-        const ws = XLSX.utils.aoa_to_sheet([data.items[0].columns, ...data.items[0].values]);
-        XLSX.utils.book_append_sheet(wb, ws, 'Pass Items');
-      }
-      if (data.transactions.length) {
-        const ws = XLSX.utils.aoa_to_sheet([data.transactions[0].columns, ...data.transactions[0].values]);
-        XLSX.utils.book_append_sheet(wb, ws, 'Transactions');
-      }
+      const addSheet = (name: string, result: any[]) => {
+        if (result.length) {
+          const ws = XLSX.utils.aoa_to_sheet([result[0].columns, ...result[0].values]);
+          XLSX.utils.book_append_sheet(wb, ws, name);
+        }
+      };
+
+      addSheet('Fishermen', data.fishermen);
+      addSheet('Species', data.species);
+      addSheet('Passes', data.passes);
+      addSheet('Pass Items', data.items);
+      addSheet('Transactions', data.transactions);
+      addSheet('Transaction Passes', data.transactionPasses);
 
       const buf = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
       const blob = new Blob([buf], { type: 'application/octet-stream' });
