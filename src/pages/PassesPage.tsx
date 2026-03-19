@@ -8,23 +8,25 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Trash2, Edit2, X } from 'lucide-react';
+import { Plus, Trash2, Edit2, X, Filter } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface ItemForm { species_id: number; quantity: string; unit: string; price_per_unit?: number; total?: number; }
 
 export default function PassesPage() {
-  const [passes, setPasses] = useState<Pass[]>([]);
+  const [allPasses, setAllPasses] = useState<Pass[]>([]);
   const [passItems, setPassItems] = useState<Record<number, PassItem[]>>({});
   const [fishermen, setFishermen] = useState<Fisherman[]>([]);
   const [species, setSpecies] = useState<Species[]>([]);
   const [open, setOpen] = useState(false);
   const [editingPass, setEditingPass] = useState<Partial<Pass> | null>(null);
   const [items, setItems] = useState<ItemForm[]>([]);
+  const [filterFisherman, setFilterFisherman] = useState<string>('all');
+  const [filterStatus, setFilterStatus] = useState<string>('pending');
 
   const load = async () => {
     const p = await getPasses();
-    setPasses(p);
+    setAllPasses(p);
     const map: Record<number, PassItem[]> = {};
     for (const pass of p) map[pass.id] = await getPassItems(pass.id);
     setPassItems(map);
@@ -32,6 +34,12 @@ export default function PassesPage() {
     setSpecies(await getSpecies());
   };
   useEffect(() => { load(); }, []);
+
+  const filtered = allPasses.filter(p => {
+    if (filterFisherman !== 'all' && p.fisherman_id !== Number(filterFisherman)) return false;
+    if (filterStatus !== 'all' && p.status !== filterStatus) return false;
+    return true;
+  });
 
   const openNew = () => {
     setEditingPass({ date: todayISO(), pass_id: '' });
@@ -52,14 +60,13 @@ export default function PassesPage() {
     const validItems = items.filter(i => i.species_id && Number(i.quantity) > 0);
     if (!validItems.length) { toast.error('Add at least one item'); return; }
 
-    const passData = { ...editingPass };
     const itemData = validItems.map(i => ({
       species_id: i.species_id, quantity: Number(i.quantity), unit: i.unit,
       price_per_unit: i.price_per_unit || 0, total: i.total || 0
     }));
 
-    if (editingPass.id) await updatePass(passData, itemData);
-    else await addPass(passData, itemData);
+    if (editingPass.id) await updatePass(editingPass, itemData);
+    else await addPass(editingPass, itemData);
 
     setOpen(false); setEditingPass(null);
     await load();
@@ -135,8 +142,30 @@ export default function PassesPage() {
         </Dialog>
       </div>
 
+      {/* Filters */}
+      <div className="flex gap-2">
+        <Select value={filterStatus} onValueChange={setFilterStatus}>
+          <SelectTrigger className="flex-1 h-9">
+            <Filter size={14} className="mr-1" />
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="pending">Pending</SelectItem>
+            <SelectItem value="settled">Settled</SelectItem>
+            <SelectItem value="all">All Status</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select value={filterFisherman} onValueChange={setFilterFisherman}>
+          <SelectTrigger className="flex-1 h-9"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Fishermen</SelectItem>
+            {fishermen.map(f => <SelectItem key={f.id} value={String(f.id)}>{f.name}</SelectItem>)}
+          </SelectContent>
+        </Select>
+      </div>
+
       <div className="space-y-2">
-        {passes.map(p => (
+        {filtered.map(p => (
           <Card key={p.id} className="border-border/50">
             <CardContent className="p-3">
               <div className="flex justify-between items-start">
@@ -163,7 +192,7 @@ export default function PassesPage() {
             </CardContent>
           </Card>
         ))}
-        {passes.length === 0 && <p className="text-center text-muted-foreground py-8 text-sm">No passes. Create one to start recording catches!</p>}
+        {filtered.length === 0 && <p className="text-center text-muted-foreground py-8 text-sm">No passes found</p>}
       </div>
     </div>
   );
