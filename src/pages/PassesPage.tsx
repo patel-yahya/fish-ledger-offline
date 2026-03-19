@@ -153,13 +153,9 @@ export default function PassesPage() {
             <SelectItem value="all">All Status</SelectItem>
           </SelectContent>
         </Select>
-        <Select value={filterFisherman} onValueChange={setFilterFisherman}>
-          <SelectTrigger className="flex-1 h-9"><SelectValue /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Fishermen</SelectItem>
-            {fishermen.map(f => <SelectItem key={f.id} value={String(f.id)}>{f.name}</SelectItem>)}
-          </SelectContent>
-        </Select>
+        <div className="flex-1">
+          <FishermanSearchSelect fishermen={fishermen} value={filterFisherman} onSelect={v => setFilterFisherman(String(v))} showAll />
+        </div>
       </div>
 
       <div className="space-y-2">
