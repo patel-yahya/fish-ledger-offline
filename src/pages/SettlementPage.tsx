@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Filter } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface ItemWithPrice extends PassItem {
@@ -15,23 +16,20 @@ interface ItemWithPrice extends PassItem {
 
 export default function SettlementPage() {
   const [fishermen, setFishermen] = useState<Fisherman[]>([]);
-  const [selectedFisherman, setSelectedFisherman] = useState<number>(0);
-  const [pendingPasses, setPendingPasses] = useState<Pass[]>([]);
+  const [allPendingPasses, setAllPendingPasses] = useState<Pass[]>([]);
+  const [filterFisherman, setFilterFisherman] = useState<string>('all');
   const [selectedPasses, setSelectedPasses] = useState<Set<number>>(new Set());
   const [allItems, setAllItems] = useState<Record<number, ItemWithPrice[]>>({});
   const [cashPaid, setCashPaid] = useState('');
   const [date, setDate] = useState(todayISO());
   const [notes, setNotes] = useState('');
 
-  useEffect(() => { getFishermen().then(setFishermen); }, []);
-
-  const loadPasses = async (fid: number) => {
-    setSelectedFisherman(fid);
-    setSelectedPasses(new Set());
-    if (!fid) { setPendingPasses([]); return; }
-    const passes = await getPasses(fid);
+  const load = async () => {
+    const f = await getFishermen();
+    setFishermen(f);
+    const passes = await getPasses();
     const pending = passes.filter(p => p.status === 'pending');
-    setPendingPasses(pending);
+    setAllPendingPasses(pending);
     const items: Record<number, ItemWithPrice[]> = {};
     for (const p of pending) {
       const pi = await getPassItems(p.id);
@@ -40,9 +38,42 @@ export default function SettlementPage() {
     setAllItems(items);
   };
 
+  useEffect(() => { load(); }, []);
+
+  const filteredPasses = filterFisherman === 'all'
+    ? allPendingPasses
+    : allPendingPasses.filter(p => p.fisherman_id === Number(filterFisherman));
+
+  // When settling, all selected passes must belong to the same fisherman
+  const selectedFishermanId = (() => {
+    const ids = new Set<number>();
+    for (const pid of selectedPasses) {
+      const pass = allPendingPasses.find(p => p.id === pid);
+      if (pass) ids.add(pass.fisherman_id);
+    }
+    return ids.size === 1 ? [...ids][0] : null;
+  })();
+
   const togglePass = (id: number) => {
+    const pass = allPendingPasses.find(p => p.id === id);
+    if (!pass) return;
+
     const s = new Set(selectedPasses);
-    s.has(id) ? s.delete(id) : s.add(id);
+    if (s.has(id)) {
+      s.delete(id);
+    } else {
+      // Check if adding this pass would mix fishermen
+      const existingFids = new Set<number>();
+      for (const pid of s) {
+        const p = allPendingPasses.find(pp => pp.id === pid);
+        if (p) existingFids.add(p.fisherman_id);
+      }
+      if (existingFids.size > 0 && !existingFids.has(pass.fisherman_id)) {
+        toast.error('You can only settle passes for one fisherman at a time');
+        return;
+      }
+      s.add(id);
+    }
     setSelectedPasses(s);
   };
 
@@ -58,13 +89,13 @@ export default function SettlementPage() {
     return sum + items.reduce((s, i) => s + (Number(i.newPrice) || 0) * i.quantity, 0);
   }, 0);
 
-  const fisherman = fishermen.find(f => f.id === selectedFisherman);
+  const fisherman = selectedFishermanId ? fishermen.find(f => f.id === selectedFishermanId) : null;
   const oldBalance = fisherman?.running_balance || 0;
   const cash = Number(cashPaid) || 0;
   const newBalance = oldBalance + (cash - totalFishValue);
 
   const handleSettle = async () => {
-    if (!selectedFisherman) { toast.error('Select a fisherman'); return; }
+    if (!selectedFishermanId) { toast.error('Select passes from one fisherman'); return; }
     if (selectedPasses.size === 0) { toast.error('Select passes to settle'); return; }
 
     const itemPrices: { passItemId: number; pricePerUnit: number }[] = [];
@@ -75,11 +106,15 @@ export default function SettlementPage() {
       }
     }
 
-    await settlePass(selectedFisherman, Array.from(selectedPasses), itemPrices, cash, date, notes);
+    await settlePass(selectedFishermanId, Array.from(selectedPasses), itemPrices, cash, date, notes);
     toast.success('Settlement complete!');
     setCashPaid(''); setNotes(''); setSelectedPasses(new Set());
-    await loadPasses(selectedFisherman);
-    setFishermen(await getFishermen());
+    await load();
+  };
+
+  const handleFilterChange = (v: string) => {
+    setFilterFisherman(v);
+    setSelectedPasses(new Set());
   };
 
   return (
@@ -87,69 +122,72 @@ export default function SettlementPage() {
       <h1 className="text-2xl font-bold">Settlement</h1>
 
       <div>
-        <Label>Select Fisherman</Label>
-        <Select value={String(selectedFisherman || '')} onValueChange={v => loadPasses(Number(v))}>
-          <SelectTrigger><SelectValue placeholder="Choose fisherman" /></SelectTrigger>
-          <SelectContent>{fishermen.map(f => <SelectItem key={f.id} value={String(f.id)}>{f.name} ({formatINR(f.running_balance)})</SelectItem>)}</SelectContent>
+        <Label>Filter by Fisherman</Label>
+        <Select value={filterFisherman} onValueChange={handleFilterChange}>
+          <SelectTrigger>
+            <Filter size={14} className="mr-1" />
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Fishermen</SelectItem>
+            {fishermen.map(f => <SelectItem key={f.id} value={String(f.id)}>{f.name} ({formatINR(f.running_balance)})</SelectItem>)}
+          </SelectContent>
         </Select>
       </div>
 
-      {selectedFisherman > 0 && (
-        <>
-          <Card className="border-border/50">
-            <CardHeader className="pb-2"><CardTitle className="text-sm">Pending Passes</CardTitle></CardHeader>
-            <CardContent className="p-3 space-y-3">
-              {pendingPasses.length === 0 && <p className="text-sm text-muted-foreground">No pending passes</p>}
-              {pendingPasses.map(p => (
-                <div key={p.id} className={`p-3 rounded-md border transition-colors ${selectedPasses.has(p.id) ? 'border-primary bg-primary/5' : 'border-border'}`}>
-                  <div className="flex items-center gap-2">
-                    <Checkbox checked={selectedPasses.has(p.id)} onCheckedChange={() => togglePass(p.id)} />
-                    <span className="font-mono text-sm font-semibold">#{p.pass_id}</span>
-                    <span className="text-xs text-muted-foreground">{p.date}</span>
+      <Card className="border-border/50">
+        <CardHeader className="pb-2"><CardTitle className="text-sm">Pending Passes ({filteredPasses.length})</CardTitle></CardHeader>
+        <CardContent className="p-3 space-y-3">
+          {filteredPasses.length === 0 && <p className="text-sm text-muted-foreground">No pending passes</p>}
+          {filteredPasses.map(p => (
+            <div key={p.id} className={`p-3 rounded-md border transition-colors ${selectedPasses.has(p.id) ? 'border-primary bg-primary/5' : 'border-border'}`}>
+              <div className="flex items-center gap-2">
+                <Checkbox checked={selectedPasses.has(p.id)} onCheckedChange={() => togglePass(p.id)} />
+                <span className="font-mono text-sm font-semibold">#{p.pass_id}</span>
+                <span className="text-xs text-muted-foreground">{p.fisherman_name} • {p.date}</span>
+              </div>
+              {selectedPasses.has(p.id) && allItems[p.id]?.map(item => (
+                <div key={item.id} className="flex items-center gap-2 mt-2 ml-6">
+                  <span className="text-xs flex-1">{item.species_name}: {item.quantity} {item.unit}</span>
+                  <div className="w-24">
+                    <Input className="h-7 text-xs" type="number" placeholder="₹ Price" value={item.newPrice}
+                      onChange={e => updatePrice(p.id, item.id, e.target.value)} />
                   </div>
-                  {selectedPasses.has(p.id) && allItems[p.id]?.map(item => (
-                    <div key={item.id} className="flex items-center gap-2 mt-2 ml-6">
-                      <span className="text-xs flex-1">{item.species_name}: {item.quantity} {item.unit}</span>
-                      <div className="w-24">
-                        <Input className="h-7 text-xs" type="number" placeholder="₹ Price" value={item.newPrice}
-                          onChange={e => updatePrice(p.id, item.id, e.target.value)} />
-                      </div>
-                      <span className="text-xs rupee w-20 text-right">{formatINR((Number(item.newPrice) || 0) * item.quantity)}</span>
-                    </div>
-                  ))}
+                  <span className="text-xs rupee w-20 text-right">{formatINR((Number(item.newPrice) || 0) * item.quantity)}</span>
                 </div>
               ))}
-            </CardContent>
-          </Card>
+            </div>
+          ))}
+        </CardContent>
+      </Card>
 
-          {selectedPasses.size > 0 && (
-            <Card className="border-primary/30 ledger-shadow">
-              <CardContent className="p-4 space-y-3">
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Total Fish Value (V)</span>
-                  <span className="rupee font-bold">{formatINR(totalFishValue)}</span>
-                </div>
-                <div>
-                  <Label>Cash Paid (C)</Label>
-                  <Input type="number" value={cashPaid} onChange={e => setCashPaid(e.target.value)} placeholder="₹ Enter amount" />
-                </div>
-                <div><Label>Date</Label><Input type="date" value={date} onChange={e => setDate(e.target.value)} /></div>
-                <div><Label>Notes</Label><Input value={notes} onChange={e => setNotes(e.target.value)} /></div>
+      {selectedPasses.size > 0 && selectedFishermanId && (
+        <Card className="border-primary/30 ledger-shadow">
+          <CardContent className="p-4 space-y-3">
+            <p className="text-sm font-semibold">{fisherman?.name}</p>
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">Total Fish Value (V)</span>
+              <span className="rupee font-bold">{formatINR(totalFishValue)}</span>
+            </div>
+            <div>
+              <Label>Cash Paid (C)</Label>
+              <Input type="number" value={cashPaid} onChange={e => setCashPaid(e.target.value)} placeholder="₹ Enter amount" />
+            </div>
+            <div><Label>Date</Label><Input type="date" value={date} onChange={e => setDate(e.target.value)} /></div>
+            <div><Label>Notes</Label><Input value={notes} onChange={e => setNotes(e.target.value)} /></div>
 
-                <div className="bg-muted p-3 rounded-md space-y-1 text-sm">
-                  <div className="flex justify-between"><span>Old Balance</span><span className="rupee">{formatINR(oldBalance)}</span></div>
-                  <div className="flex justify-between"><span>Cash - Fish Value</span><span className="rupee">{formatINR(cash - totalFishValue)}</span></div>
-                  <div className="flex justify-between font-bold border-t border-border pt-1 mt-1">
-                    <span>New Balance</span>
-                    <span className={`rupee ${newBalance > 0 ? 'text-destructive' : 'text-success'}`}>{formatINR(newBalance)}</span>
-                  </div>
-                </div>
+            <div className="bg-muted p-3 rounded-md space-y-1 text-sm">
+              <div className="flex justify-between"><span>Old Balance</span><span className="rupee">{formatINR(oldBalance)}</span></div>
+              <div className="flex justify-between"><span>Cash - Fish Value</span><span className="rupee">{formatINR(cash - totalFishValue)}</span></div>
+              <div className="flex justify-between font-bold border-t border-border pt-1 mt-1">
+                <span>New Balance</span>
+                <span className={`rupee ${newBalance > 0 ? 'text-destructive' : 'text-success'}`}>{formatINR(newBalance)}</span>
+              </div>
+            </div>
 
-                <Button onClick={handleSettle} className="w-full">Confirm Settlement</Button>
-              </CardContent>
-            </Card>
-          )}
-        </>
+            <Button onClick={handleSettle} className="w-full">Confirm Settlement</Button>
+          </CardContent>
+        </Card>
       )}
     </div>
   );
