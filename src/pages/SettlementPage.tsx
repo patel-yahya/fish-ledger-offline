@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import FishermanSearchSelect from '@/components/FishermanSearchSelect';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Filter } from 'lucide-react';
 import { toast } from 'sonner';
@@ -123,16 +124,13 @@ export default function SettlementPage() {
 
       <div>
         <Label>Filter by Fisherman</Label>
-        <Select value={filterFisherman} onValueChange={handleFilterChange}>
-          <SelectTrigger>
-            <Filter size={14} className="mr-1" />
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Fishermen</SelectItem>
-            {fishermen.map(f => <SelectItem key={f.id} value={String(f.id)}>{f.name} ({formatINR(f.running_balance)})</SelectItem>)}
-          </SelectContent>
-        </Select>
+        <FishermanSearchSelect
+          fishermen={fishermen}
+          value={filterFisherman}
+          onSelect={v => handleFilterChange(String(v))}
+          showAll
+          formatLabel={f => `${f.name} (${formatINR(f.running_balance)})`}
+        />
       </div>
 
       <Card className="border-border/50">

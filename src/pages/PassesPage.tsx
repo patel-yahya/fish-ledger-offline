@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import FishermanSearchSelect from '@/components/FishermanSearchSelect';
 import { Plus, Trash2, Edit2, X, Filter } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -94,10 +95,7 @@ export default function PassesPage() {
               <div><Label>Pass ID (from slip) *</Label><Input value={editingPass?.pass_id || ''} onChange={e => setEditingPass(p => ({ ...p, pass_id: e.target.value }))} placeholder="Enter paper slip ID" /></div>
               <div>
                 <Label>Fisherman *</Label>
-                <Select value={String(editingPass?.fisherman_id || '')} onValueChange={v => setEditingPass(p => ({ ...p, fisherman_id: Number(v) }))}>
-                  <SelectTrigger><SelectValue placeholder="Select fisherman" /></SelectTrigger>
-                  <SelectContent>{fishermen.map(f => <SelectItem key={f.id} value={String(f.id)}>{f.name}</SelectItem>)}</SelectContent>
-                </Select>
+                <FishermanSearchSelect fishermen={fishermen} value={editingPass?.fisherman_id || 0} onSelect={v => setEditingPass(p => ({ ...p, fisherman_id: Number(v) }))} />
               </div>
               <div><Label>Date</Label><Input type="date" value={editingPass?.date || todayISO()} onChange={e => setEditingPass(p => ({ ...p, date: e.target.value }))} /></div>
 
@@ -155,13 +153,9 @@ export default function PassesPage() {
             <SelectItem value="all">All Status</SelectItem>
           </SelectContent>
         </Select>
-        <Select value={filterFisherman} onValueChange={setFilterFisherman}>
-          <SelectTrigger className="flex-1 h-9"><SelectValue /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Fishermen</SelectItem>
-            {fishermen.map(f => <SelectItem key={f.id} value={String(f.id)}>{f.name}</SelectItem>)}
-          </SelectContent>
-        </Select>
+        <div className="flex-1">
+          <FishermanSearchSelect fishermen={fishermen} value={filterFisherman} onSelect={v => setFilterFisherman(String(v))} showAll />
+        </div>
       </div>
 
       <div className="space-y-2">
