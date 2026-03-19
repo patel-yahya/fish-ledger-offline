@@ -95,10 +95,7 @@ export default function PassesPage() {
               <div><Label>Pass ID (from slip) *</Label><Input value={editingPass?.pass_id || ''} onChange={e => setEditingPass(p => ({ ...p, pass_id: e.target.value }))} placeholder="Enter paper slip ID" /></div>
               <div>
                 <Label>Fisherman *</Label>
-                <Select value={String(editingPass?.fisherman_id || '')} onValueChange={v => setEditingPass(p => ({ ...p, fisherman_id: Number(v) }))}>
-                  <SelectTrigger><SelectValue placeholder="Select fisherman" /></SelectTrigger>
-                  <SelectContent>{fishermen.map(f => <SelectItem key={f.id} value={String(f.id)}>{f.name}</SelectItem>)}</SelectContent>
-                </Select>
+                <FishermanSearchSelect fishermen={fishermen} value={editingPass?.fisherman_id || 0} onSelect={v => setEditingPass(p => ({ ...p, fisherman_id: Number(v) }))} />
               </div>
               <div><Label>Date</Label><Input type="date" value={editingPass?.date || todayISO()} onChange={e => setEditingPass(p => ({ ...p, date: e.target.value }))} /></div>
 
