@@ -226,8 +226,9 @@ export async function getPasses(fishermanId?: number): Promise<Pass[]> {
   if (!res.length) return [];
   return res[0].values.map(r => ({
     id: r[0] as number, pass_id: r[1] as string, fisherman_id: r[2] as number,
-    date: r[3] as string, status: r[4] as string, notes: r[5] as string || '',
-    created_at: r[6] as string, fisherman_name: r[7] as string
+    date: r[3] as string, status: r[4] as string, cash_given: r[5] as number || 0,
+    notes: r[6] as string || '',
+    created_at: r[7] as string, fisherman_name: r[8] as string
   }));
 }
 
