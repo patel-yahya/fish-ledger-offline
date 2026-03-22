@@ -219,7 +219,7 @@ export interface PassItem {
 
 export async function getPasses(fishermanId?: number): Promise<Pass[]> {
   const d = await getDb();
-  let q = `SELECT p.*, f.name as fname FROM passes p 
+  let q = `SELECT p.id, p.pass_id, p.fisherman_id, p.date, p.status, p.cash_given, p.notes, p.created_at, f.name as fname FROM passes p 
            JOIN fishermen f ON p.fisherman_id = f.id`;
   const params: any[] = [];
   if (fishermanId) { q += ' WHERE p.fisherman_id=?'; params.push(fishermanId); }
