@@ -43,7 +43,7 @@ export default function PassesPage() {
   });
 
   const openNew = () => {
-    setEditingPass({ date: todayISO(), pass_id: '' });
+    setEditingPass({ date: todayISO(), pass_id: '', cash_given: 0 });
     setItems([{ species_id: 0, quantity: '', unit: 'Kg' }]);
     setOpen(true);
   };
