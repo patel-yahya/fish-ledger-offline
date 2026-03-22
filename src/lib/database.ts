@@ -199,6 +199,7 @@ export interface Pass {
   fisherman_name?: string;
   date: string;
   status: string;
+  cash_given: number;
   notes: string;
   items?: PassItem[];
 }
