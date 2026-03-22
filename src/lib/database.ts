@@ -247,13 +247,20 @@ export async function getPassItems(passId: number): Promise<PassItem[]> {
 
 export async function addPass(pass: Partial<Pass>, items: Partial<PassItem>[]): Promise<number> {
   const d = await getDb();
-  d.run('INSERT INTO passes (pass_id, fisherman_id, date, notes) VALUES (?,?,?,?)',
-    [pass.pass_id, pass.fisherman_id, pass.date, pass.notes || '']);
+  const cashGiven = pass.cash_given || 0;
+  d.run('INSERT INTO passes (pass_id, fisherman_id, date, cash_given, notes) VALUES (?,?,?,?,?)',
+    [pass.pass_id, pass.fisherman_id, pass.date, cashGiven, pass.notes || '']);
   const idRes = d.exec('SELECT last_insert_rowid()');
   const newId = idRes[0].values[0][0] as number;
   for (const item of items) {
     d.run('INSERT INTO pass_items (pass_id, species_id, quantity, unit) VALUES (?,?,?,?)',
       [newId, item.species_id, item.quantity, item.unit]);
+  }
+  // If cash given, record as advance transaction
+  if (cashGiven > 0) {
+    await addManualTransaction(
+      pass.fisherman_id!, cashGiven, 0, pass.date!, `Advance on pass #${pass.pass_id}`
+    );
   }
   saveDb();
   return newId;
