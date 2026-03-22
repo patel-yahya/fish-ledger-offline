@@ -63,6 +63,7 @@ function initTables(db: Database) {
       fisherman_id INTEGER NOT NULL,
       date TEXT NOT NULL,
       status TEXT DEFAULT 'pending',
+      cash_given REAL DEFAULT 0,
       notes TEXT,
       created_at TEXT DEFAULT (datetime('now','localtime')),
       FOREIGN KEY (fisherman_id) REFERENCES fishermen(id) ON DELETE CASCADE
