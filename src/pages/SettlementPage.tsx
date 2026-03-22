@@ -90,6 +90,11 @@ export default function SettlementPage() {
     return sum + items.reduce((s, i) => s + (Number(i.newPrice) || 0) * i.quantity, 0);
   }, 0);
 
+  const totalAdvanceGiven = Array.from(selectedPasses).reduce((sum, pid) => {
+    const pass = allPendingPasses.find(p => p.id === pid);
+    return sum + (pass?.cash_given || 0);
+  }, 0);
+
   const fisherman = selectedFishermanId ? fishermen.find(f => f.id === selectedFishermanId) : null;
   const oldBalance = fisherman?.running_balance || 0;
   const cash = Number(cashPaid) || 0;
