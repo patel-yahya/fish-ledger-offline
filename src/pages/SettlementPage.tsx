@@ -148,6 +148,7 @@ export default function SettlementPage() {
                 <Checkbox checked={selectedPasses.has(p.id)} onCheckedChange={() => togglePass(p.id)} />
                 <span className="font-mono text-sm font-semibold">#{p.pass_id}</span>
                 <span className="text-xs text-muted-foreground">{p.fisherman_name} • {p.date}</span>
+                {p.cash_given > 0 && <Badge variant="outline" className="text-[10px]">Adv: ₹{p.cash_given}</Badge>}
               </div>
               {selectedPasses.has(p.id) && allItems[p.id]?.map(item => (
                 <div key={item.id} className="flex items-center gap-2 mt-2 ml-6">
