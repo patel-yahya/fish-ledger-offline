@@ -275,6 +275,10 @@ export default function FishermanDetail() {
                 <Plus size={14} className="mr-1" /> Add Item
               </Button>
             </div>
+            <div>
+              <Label>Cash Given (Advance)</Label>
+              <Input type="number" value={editingPass?.cash_given || ''} onChange={e => setEditingPass(p => ({ ...p, cash_given: Number(e.target.value) || 0 }))} placeholder="₹ 0 (optional)" />
+            </div>
             <div><Label>Notes</Label><Input value={editingPass?.notes || ''} onChange={e => setEditingPass(p => ({ ...p, notes: e.target.value }))} /></div>
             <Button onClick={handleSavePass} className="w-full">Save Pass</Button>
           </div>
