@@ -268,8 +268,8 @@ export async function addPass(pass: Partial<Pass>, items: Partial<PassItem>[]): 
 
 export async function updatePass(pass: Partial<Pass>, items: Partial<PassItem>[]): Promise<void> {
   const d = await getDb();
-  d.run('UPDATE passes SET pass_id=?, fisherman_id=?, date=?, notes=? WHERE id=?',
-    [pass.pass_id, pass.fisherman_id, pass.date, pass.notes || '', pass.id]);
+  d.run('UPDATE passes SET pass_id=?, fisherman_id=?, date=?, cash_given=?, notes=? WHERE id=?',
+    [pass.pass_id, pass.fisherman_id, pass.date, pass.cash_given || 0, pass.notes || '', pass.id]);
   d.run('DELETE FROM pass_items WHERE pass_id=?', [pass.id]);
   for (const item of items) {
     d.run('INSERT INTO pass_items (pass_id, species_id, quantity, unit, price_per_unit, total) VALUES (?,?,?,?,?,?)',
