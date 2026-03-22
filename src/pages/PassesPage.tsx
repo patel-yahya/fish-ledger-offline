@@ -187,6 +187,9 @@ export default function PassesPage() {
                   {item.price_per_unit > 0 && ` @ ₹${item.price_per_unit}`}
                 </div>
               ))}
+              {p.cash_given > 0 && (
+                <div className="text-xs mt-1 text-primary font-medium">Advance: ₹{p.cash_given}</div>
+              )}
             </CardContent>
           </Card>
         ))}
