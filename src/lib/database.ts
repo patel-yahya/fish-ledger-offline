@@ -102,6 +102,8 @@ function initTables(db: Database) {
       FOREIGN KEY (pass_id) REFERENCES passes(id)
     );
   `);
+  // Migration: add cash_given column if missing
+  try { db.run('ALTER TABLE passes ADD COLUMN cash_given REAL DEFAULT 0'); } catch (_) { /* already exists */ }
   saveDb();
 }
 
