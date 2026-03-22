@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import FishermanSearchSelect from '@/components/FishermanSearchSelect';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -90,6 +91,11 @@ export default function SettlementPage() {
     return sum + items.reduce((s, i) => s + (Number(i.newPrice) || 0) * i.quantity, 0);
   }, 0);
 
+  const totalAdvanceGiven = Array.from(selectedPasses).reduce((sum, pid) => {
+    const pass = allPendingPasses.find(p => p.id === pid);
+    return sum + (pass?.cash_given || 0);
+  }, 0);
+
   const fisherman = selectedFishermanId ? fishermen.find(f => f.id === selectedFishermanId) : null;
   const oldBalance = fisherman?.running_balance || 0;
   const cash = Number(cashPaid) || 0;
@@ -143,6 +149,7 @@ export default function SettlementPage() {
                 <Checkbox checked={selectedPasses.has(p.id)} onCheckedChange={() => togglePass(p.id)} />
                 <span className="font-mono text-sm font-semibold">#{p.pass_id}</span>
                 <span className="text-xs text-muted-foreground">{p.fisherman_name} • {p.date}</span>
+                {p.cash_given > 0 && <Badge variant="outline" className="text-[10px]">Adv: ₹{p.cash_given}</Badge>}
               </div>
               {selectedPasses.has(p.id) && allItems[p.id]?.map(item => (
                 <div key={item.id} className="flex items-center gap-2 mt-2 ml-6">
@@ -167,16 +174,23 @@ export default function SettlementPage() {
               <span className="text-muted-foreground">Total Fish Value (V)</span>
               <span className="rupee font-bold">{formatINR(totalFishValue)}</span>
             </div>
+            {totalAdvanceGiven > 0 && (
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Advance Already Given (A)</span>
+                <span className="rupee font-bold text-primary">{formatINR(totalAdvanceGiven)}</span>
+              </div>
+            )}
             <div>
-              <Label>Cash Paid (C)</Label>
-              <Input type="number" value={cashPaid} onChange={e => setCashPaid(e.target.value)} placeholder="₹ Enter amount" />
+              <Label>Additional Cash (C)</Label>
+              <Input type="number" value={cashPaid} onChange={e => setCashPaid(e.target.value)} placeholder="₹ Enter amount (optional)" />
             </div>
             <div><Label>Date</Label><Input type="date" value={date} onChange={e => setDate(e.target.value)} /></div>
             <div><Label>Notes</Label><Input value={notes} onChange={e => setNotes(e.target.value)} /></div>
 
             <div className="bg-muted p-3 rounded-md space-y-1 text-sm">
-              <div className="flex justify-between"><span>Old Balance</span><span className="rupee">{formatINR(oldBalance)}</span></div>
-              <div className="flex justify-between"><span>Cash - Fish Value</span><span className="rupee">{formatINR(cash - totalFishValue)}</span></div>
+              <div className="flex justify-between"><span>Old Balance (incl. advances)</span><span className="rupee">{formatINR(oldBalance)}</span></div>
+              <div className="flex justify-between"><span>Additional Cash</span><span className="rupee">+{formatINR(cash)}</span></div>
+              <div className="flex justify-between"><span>Fish Value</span><span className="rupee">-{formatINR(totalFishValue)}</span></div>
               <div className="flex justify-between font-bold border-t border-border pt-1 mt-1">
                 <span>New Balance</span>
                 <span className={`rupee ${newBalance > 0 ? 'text-destructive' : 'text-success'}`}>{formatINR(newBalance)}</span>

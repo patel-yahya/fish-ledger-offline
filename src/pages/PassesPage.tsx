@@ -43,7 +43,7 @@ export default function PassesPage() {
   });
 
   const openNew = () => {
-    setEditingPass({ date: todayISO(), pass_id: '' });
+    setEditingPass({ date: todayISO(), pass_id: '', cash_given: 0 });
     setItems([{ species_id: 0, quantity: '', unit: 'Kg' }]);
     setOpen(true);
   };
@@ -133,6 +133,10 @@ export default function PassesPage() {
                 </Button>
               </div>
 
+              <div>
+                <Label>Cash Given (Advance)</Label>
+                <Input type="number" value={editingPass?.cash_given || ''} onChange={e => setEditingPass(p => ({ ...p, cash_given: Number(e.target.value) || 0 }))} placeholder="₹ 0 (optional)" />
+              </div>
               <div><Label>Notes</Label><Input value={editingPass?.notes || ''} onChange={e => setEditingPass(p => ({ ...p, notes: e.target.value }))} /></div>
               <Button onClick={handleSave} className="w-full">Save Pass</Button>
             </div>
@@ -183,6 +187,9 @@ export default function PassesPage() {
                   {item.price_per_unit > 0 && ` @ ₹${item.price_per_unit}`}
                 </div>
               ))}
+              {p.cash_given > 0 && (
+                <div className="text-xs mt-1 text-primary font-medium">Advance: ₹{p.cash_given}</div>
+              )}
             </CardContent>
           </Card>
         ))}

@@ -63,6 +63,7 @@ function initTables(db: Database) {
       fisherman_id INTEGER NOT NULL,
       date TEXT NOT NULL,
       status TEXT DEFAULT 'pending',
+      cash_given REAL DEFAULT 0,
       notes TEXT,
       created_at TEXT DEFAULT (datetime('now','localtime')),
       FOREIGN KEY (fisherman_id) REFERENCES fishermen(id) ON DELETE CASCADE
@@ -101,6 +102,8 @@ function initTables(db: Database) {
       FOREIGN KEY (pass_id) REFERENCES passes(id)
     );
   `);
+  // Migration: add cash_given column if missing
+  try { db.run('ALTER TABLE passes ADD COLUMN cash_given REAL DEFAULT 0'); } catch (_) { /* already exists */ }
   saveDb();
 }
 
@@ -198,6 +201,7 @@ export interface Pass {
   fisherman_name?: string;
   date: string;
   status: string;
+  cash_given: number;
   notes: string;
   items?: PassItem[];
 }
@@ -224,8 +228,9 @@ export async function getPasses(fishermanId?: number): Promise<Pass[]> {
   if (!res.length) return [];
   return res[0].values.map(r => ({
     id: r[0] as number, pass_id: r[1] as string, fisherman_id: r[2] as number,
-    date: r[3] as string, status: r[4] as string, notes: r[5] as string || '',
-    created_at: r[6] as string, fisherman_name: r[7] as string
+    date: r[3] as string, status: r[4] as string, cash_given: r[5] as number || 0,
+    notes: r[6] as string || '',
+    created_at: r[7] as string, fisherman_name: r[8] as string
   }));
 }
 
@@ -244,13 +249,20 @@ export async function getPassItems(passId: number): Promise<PassItem[]> {
 
 export async function addPass(pass: Partial<Pass>, items: Partial<PassItem>[]): Promise<number> {
   const d = await getDb();
-  d.run('INSERT INTO passes (pass_id, fisherman_id, date, notes) VALUES (?,?,?,?)',
-    [pass.pass_id, pass.fisherman_id, pass.date, pass.notes || '']);
+  const cashGiven = pass.cash_given || 0;
+  d.run('INSERT INTO passes (pass_id, fisherman_id, date, cash_given, notes) VALUES (?,?,?,?,?)',
+    [pass.pass_id, pass.fisherman_id, pass.date, cashGiven, pass.notes || '']);
   const idRes = d.exec('SELECT last_insert_rowid()');
   const newId = idRes[0].values[0][0] as number;
   for (const item of items) {
     d.run('INSERT INTO pass_items (pass_id, species_id, quantity, unit) VALUES (?,?,?,?)',
       [newId, item.species_id, item.quantity, item.unit]);
+  }
+  // If cash given, record as advance transaction
+  if (cashGiven > 0) {
+    await addManualTransaction(
+      pass.fisherman_id!, cashGiven, 0, pass.date!, `Advance on pass #${pass.pass_id}`
+    );
   }
   saveDb();
   return newId;
@@ -258,8 +270,8 @@ export async function addPass(pass: Partial<Pass>, items: Partial<PassItem>[]): 
 
 export async function updatePass(pass: Partial<Pass>, items: Partial<PassItem>[]): Promise<void> {
   const d = await getDb();
-  d.run('UPDATE passes SET pass_id=?, fisherman_id=?, date=?, notes=? WHERE id=?',
-    [pass.pass_id, pass.fisherman_id, pass.date, pass.notes || '', pass.id]);
+  d.run('UPDATE passes SET pass_id=?, fisherman_id=?, date=?, cash_given=?, notes=? WHERE id=?',
+    [pass.pass_id, pass.fisherman_id, pass.date, pass.cash_given || 0, pass.notes || '', pass.id]);
   d.run('DELETE FROM pass_items WHERE pass_id=?', [pass.id]);
   for (const item of items) {
     d.run('INSERT INTO pass_items (pass_id, species_id, quantity, unit, price_per_unit, total) VALUES (?,?,?,?,?,?)',
