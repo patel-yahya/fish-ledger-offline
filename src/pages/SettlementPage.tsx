@@ -173,16 +173,25 @@ export default function SettlementPage() {
               <span className="text-muted-foreground">Total Fish Value (V)</span>
               <span className="rupee font-bold">{formatINR(totalFishValue)}</span>
             </div>
+            {totalAdvanceGiven > 0 && (
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Advance Already Given (A)</span>
+                <span className="rupee font-bold text-primary">{formatINR(totalAdvanceGiven)}</span>
+              </div>
+            )}
             <div>
-              <Label>Cash Paid (C)</Label>
-              <Input type="number" value={cashPaid} onChange={e => setCashPaid(e.target.value)} placeholder="₹ Enter amount" />
+              <Label>Additional Cash (C)</Label>
+              <Input type="number" value={cashPaid} onChange={e => setCashPaid(e.target.value)} placeholder="₹ Enter amount (optional)" />
             </div>
             <div><Label>Date</Label><Input type="date" value={date} onChange={e => setDate(e.target.value)} /></div>
             <div><Label>Notes</Label><Input value={notes} onChange={e => setNotes(e.target.value)} /></div>
 
             <div className="bg-muted p-3 rounded-md space-y-1 text-sm">
               <div className="flex justify-between"><span>Old Balance</span><span className="rupee">{formatINR(oldBalance)}</span></div>
-              <div className="flex justify-between"><span>Cash - Fish Value</span><span className="rupee">{formatINR(cash - totalFishValue)}</span></div>
+              {totalAdvanceGiven > 0 && <div className="flex justify-between"><span>Advance Already Given</span><span className="rupee">{formatINR(totalAdvanceGiven)}</span></div>}
+              <div className="flex justify-between"><span>Additional Cash</span><span className="rupee">{formatINR(cash)}</span></div>
+              <div className="flex justify-between"><span>Fish Value</span><span className="rupee">-{formatINR(totalFishValue)}</span></div>
+              <div className="flex justify-between text-xs text-muted-foreground"><span>Formula</span><span>Old + Advance + Cash - Fish</span></div>
               <div className="flex justify-between font-bold border-t border-border pt-1 mt-1">
                 <span>New Balance</span>
                 <span className={`rupee ${newBalance > 0 ? 'text-destructive' : 'text-success'}`}>{formatINR(newBalance)}</span>
