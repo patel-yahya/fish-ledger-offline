@@ -188,11 +188,9 @@ export default function SettlementPage() {
             <div><Label>Notes</Label><Input value={notes} onChange={e => setNotes(e.target.value)} /></div>
 
             <div className="bg-muted p-3 rounded-md space-y-1 text-sm">
-              <div className="flex justify-between"><span>Old Balance</span><span className="rupee">{formatINR(oldBalance)}</span></div>
-              {totalAdvanceGiven > 0 && <div className="flex justify-between"><span>Advance Already Given</span><span className="rupee">{formatINR(totalAdvanceGiven)}</span></div>}
-              <div className="flex justify-between"><span>Additional Cash</span><span className="rupee">{formatINR(cash)}</span></div>
+              <div className="flex justify-between"><span>Old Balance (incl. advances)</span><span className="rupee">{formatINR(oldBalance)}</span></div>
+              <div className="flex justify-between"><span>Additional Cash</span><span className="rupee">+{formatINR(cash)}</span></div>
               <div className="flex justify-between"><span>Fish Value</span><span className="rupee">-{formatINR(totalFishValue)}</span></div>
-              <div className="flex justify-between text-xs text-muted-foreground"><span>Formula</span><span>Old + Advance + Cash - Fish</span></div>
               <div className="flex justify-between font-bold border-t border-border pt-1 mt-1">
                 <span>New Balance</span>
                 <span className={`rupee ${newBalance > 0 ? 'text-destructive' : 'text-success'}`}>{formatINR(newBalance)}</span>
