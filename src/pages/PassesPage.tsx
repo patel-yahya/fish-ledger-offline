@@ -133,6 +133,10 @@ export default function PassesPage() {
                 </Button>
               </div>
 
+              <div>
+                <Label>Cash Given (Advance)</Label>
+                <Input type="number" value={editingPass?.cash_given || ''} onChange={e => setEditingPass(p => ({ ...p, cash_given: Number(e.target.value) || 0 }))} placeholder="₹ 0 (optional)" />
+              </div>
               <div><Label>Notes</Label><Input value={editingPass?.notes || ''} onChange={e => setEditingPass(p => ({ ...p, notes: e.target.value }))} /></div>
               <Button onClick={handleSave} className="w-full">Save Pass</Button>
             </div>
