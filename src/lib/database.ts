@@ -335,20 +335,28 @@ export async function settlePass(
 
   // Calculate total fish value
   let totalValue = 0;
+  let totalCashGiven = 0;
   for (const pid of passIds) {
     const r = d.exec('SELECT COALESCE(SUM(total),0) FROM pass_items WHERE pass_id=?', [pid]);
     totalValue += r[0].values[0][0] as number;
+    const cg = d.exec('SELECT COALESCE(cash_given,0) FROM passes WHERE id=?', [pid]);
+    totalCashGiven += cg[0].values[0][0] as number;
   }
 
   // Get old balance
   const bRes = d.exec('SELECT running_balance FROM fishermen WHERE id=?', [fishermanId]);
   const oldBalance = bRes[0].values[0][0] as number;
+  // cashPaid = additional cash given at settlement time
+  // totalCashGiven = advances already recorded (already in oldBalance)
+  // Formula: newBalance = oldBalance + cashPaid - totalValue
+  // The advances are already part of oldBalance, so we just add settlement cash and subtract fish value
   const newBalance = oldBalance + (cashPaid - totalValue);
 
   // Create transaction
   d.run(`INSERT INTO transactions (fisherman_id, date, total_fish_value, cash_paid, old_balance, new_balance, notes)
          VALUES (?,?,?,?,?,?,?)`,
-    [fishermanId, date, totalValue, cashPaid, oldBalance, newBalance, notes]);
+    [fishermanId, date, totalValue, cashPaid + totalCashGiven, oldBalance, newBalance,
+     notes + (totalCashGiven > 0 ? ` (includes ₹${totalCashGiven} advance from passes)` : '')]);
   const txRes = d.exec('SELECT last_insert_rowid()');
   const txId = txRes[0].values[0][0] as number;
 
