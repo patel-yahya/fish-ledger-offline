@@ -48,6 +48,12 @@ export default function FishermanDetail() {
   const [advDate, setAdvDate] = useState(todayISO());
   const [advNotes, setAdvNotes] = useState('');
 
+  // Receive money dialog
+  const [recvOpen, setRecvOpen] = useState(false);
+  const [recvAmount, setRecvAmount] = useState('');
+  const [recvDate, setRecvDate] = useState(todayISO());
+  const [recvNotes, setRecvNotes] = useState('');
+
   const load = async () => {
     const all = await getFishermen();
     setFisherman(all.find(f => f.id === fid) || null);
