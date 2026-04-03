@@ -14,7 +14,7 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ArrowLeft, FileText, Plus, Edit2, Trash2, X, IndianRupee } from 'lucide-react';
+import { ArrowLeft, FileText, Plus, Edit2, Trash2, X, IndianRupee, HandCoins } from 'lucide-react';
 import { generatePDF } from '@/lib/pdf';
 import { toast } from 'sonner';
 
