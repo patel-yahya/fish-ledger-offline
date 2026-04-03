@@ -14,7 +14,7 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ArrowLeft, FileText, Plus, Edit2, Trash2, X, IndianRupee } from 'lucide-react';
+import { ArrowLeft, FileText, Plus, Edit2, Trash2, X, IndianRupee, HandCoins } from 'lucide-react';
 import { generatePDF } from '@/lib/pdf';
 import { toast } from 'sonner';
 
@@ -47,6 +47,12 @@ export default function FishermanDetail() {
   const [advAmount, setAdvAmount] = useState('');
   const [advDate, setAdvDate] = useState(todayISO());
   const [advNotes, setAdvNotes] = useState('');
+
+  // Receive money dialog
+  const [recvOpen, setRecvOpen] = useState(false);
+  const [recvAmount, setRecvAmount] = useState('');
+  const [recvDate, setRecvDate] = useState(todayISO());
+  const [recvNotes, setRecvNotes] = useState('');
 
   const load = async () => {
     const all = await getFishermen();
@@ -137,6 +143,19 @@ export default function FishermanDetail() {
     toast.success('Advance recorded');
   };
 
+  // --- Receive Money ---
+  const handleReceive = async () => {
+    const amt = Number(recvAmount);
+    if (!amt || amt <= 0) { toast.error('Enter a valid amount'); return; }
+    await addManualTransaction(fid, 0, amt, recvDate, recvNotes || 'Money received from fisherman');
+    setRecvOpen(false);
+    setRecvAmount('');
+    setRecvDate(todayISO());
+    setRecvNotes('');
+    await load();
+    toast.success('Payment received');
+  };
+
   if (!fisherman) return <div className="p-4 text-muted-foreground">Loading...</div>;
 
   return (
@@ -165,6 +184,9 @@ export default function FishermanDetail() {
             </Button>
             <Button size="sm" variant="outline" className="flex-1" onClick={() => { setAdvOpen(true); }}>
               <IndianRupee size={14} className="mr-1" /> Advance
+            </Button>
+            <Button size="sm" variant="outline" className="flex-1" onClick={() => { setRecvOpen(true); }}>
+              <HandCoins size={14} className="mr-1" /> Receive
             </Button>
           </div>
         </CardContent>
@@ -308,6 +330,19 @@ export default function FishermanDetail() {
             <div><Label>Date</Label><Input type="date" value={advDate} onChange={e => setAdvDate(e.target.value)} /></div>
             <div><Label>Notes</Label><Input value={advNotes} onChange={e => setAdvNotes(e.target.value)} placeholder="Advance payment" /></div>
             <Button onClick={handleAdvance} className="w-full">Record Advance</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* RECEIVE MONEY DIALOG */}
+      <Dialog open={recvOpen} onOpenChange={setRecvOpen}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Receive Money from Fisherman</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            <div><Label>Amount *</Label><Input type="number" value={recvAmount} onChange={e => setRecvAmount(e.target.value)} placeholder="₹ 0" /></div>
+            <div><Label>Date</Label><Input type="date" value={recvDate} onChange={e => setRecvDate(e.target.value)} /></div>
+            <div><Label>Notes</Label><Input value={recvNotes} onChange={e => setRecvNotes(e.target.value)} placeholder="Money received from fisherman" /></div>
+            <Button onClick={handleReceive} className="w-full">Record Payment</Button>
           </div>
         </DialogContent>
       </Dialog>
