@@ -143,6 +143,19 @@ export default function FishermanDetail() {
     toast.success('Advance recorded');
   };
 
+  // --- Receive Money ---
+  const handleReceive = async () => {
+    const amt = Number(recvAmount);
+    if (!amt || amt <= 0) { toast.error('Enter a valid amount'); return; }
+    await addManualTransaction(fid, 0, amt, recvDate, recvNotes || 'Money received from fisherman');
+    setRecvOpen(false);
+    setRecvAmount('');
+    setRecvDate(todayISO());
+    setRecvNotes('');
+    await load();
+    toast.success('Payment received');
+  };
+
   if (!fisherman) return <div className="p-4 text-muted-foreground">Loading...</div>;
 
   return (
