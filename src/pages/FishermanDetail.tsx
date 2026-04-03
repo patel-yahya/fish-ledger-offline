@@ -147,7 +147,9 @@ export default function FishermanDetail() {
   const handleReceive = async () => {
     const amt = Number(recvAmount);
     if (!amt || amt <= 0) { toast.error('Enter a valid amount'); return; }
-    await addManualTransaction(fid, 0, amt, recvDate, recvNotes || 'Money received from fisherman');
+    // Use negative cashPaid to represent money received (not fish value)
+    // Formula: newBalance = oldBalance + (cashPaid - totalFishValue) = oldBalance + (-amt) = oldBalance - amt
+    await addManualTransaction(fid, -amt, 0, recvDate, recvNotes || 'Money received from fisherman');
     setRecvOpen(false);
     setRecvAmount('');
     setRecvDate(todayISO());
