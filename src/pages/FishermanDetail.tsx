@@ -185,6 +185,9 @@ export default function FishermanDetail() {
             <Button size="sm" variant="outline" className="flex-1" onClick={() => { setAdvOpen(true); }}>
               <IndianRupee size={14} className="mr-1" /> Advance
             </Button>
+            <Button size="sm" variant="outline" className="flex-1" onClick={() => { setRecvOpen(true); }}>
+              <HandCoins size={14} className="mr-1" /> Receive
+            </Button>
           </div>
         </CardContent>
       </Card>
