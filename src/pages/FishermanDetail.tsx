@@ -147,7 +147,9 @@ export default function FishermanDetail() {
   const handleReceive = async () => {
     const amt = Number(recvAmount);
     if (!amt || amt <= 0) { toast.error('Enter a valid amount'); return; }
-    await addManualTransaction(fid, 0, amt, recvDate, recvNotes || 'Money received from fisherman');
+    // Use negative cashPaid to represent money received (not fish value)
+    // Formula: newBalance = oldBalance + (cashPaid - totalFishValue) = oldBalance + (-amt) = oldBalance - amt
+    await addManualTransaction(fid, -amt, 0, recvDate, recvNotes || 'Money received from fisherman');
     setRecvOpen(false);
     setRecvAmount('');
     setRecvDate(todayISO());
@@ -244,8 +246,16 @@ export default function FishermanDetail() {
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-2 mt-2 text-xs">
-                  <div><span className="text-muted-foreground">Fish Value:</span> <span className="rupee">{formatINR(t.total_fish_value)}</span></div>
-                  <div><span className="text-muted-foreground">Cash Paid:</span> <span className="rupee">{formatINR(t.cash_paid)}</span></div>
+                  {t.cash_paid < 0 ? (
+                    <>
+                      <div className="col-span-2"><span className="text-muted-foreground">Money Received:</span> <span className="rupee text-green-600 font-semibold">{formatINR(Math.abs(t.cash_paid))}</span></div>
+                    </>
+                  ) : (
+                    <>
+                      <div><span className="text-muted-foreground">Fish Value:</span> <span className="rupee">{formatINR(t.total_fish_value)}</span></div>
+                      <div><span className="text-muted-foreground">Cash Paid:</span> <span className="rupee">{formatINR(t.cash_paid)}</span></div>
+                    </>
+                  )}
                   <div><span className="text-muted-foreground">Old Bal:</span> <span className="rupee">{formatINR(t.old_balance)}</span></div>
                   <div><span className="text-muted-foreground">New Bal:</span> <span className="rupee font-bold">{formatINR(t.new_balance)}</span></div>
                 </div>
