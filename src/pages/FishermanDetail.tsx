@@ -332,6 +332,18 @@ export default function FishermanDetail() {
             <Button onClick={handleAdvance} className="w-full">Record Advance</Button>
           </div>
         </DialogContent>
+
+      {/* RECEIVE MONEY DIALOG */}
+      <Dialog open={recvOpen} onOpenChange={setRecvOpen}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Receive Money from Fisherman</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            <div><Label>Amount *</Label><Input type="number" value={recvAmount} onChange={e => setRecvAmount(e.target.value)} placeholder="₹ 0" /></div>
+            <div><Label>Date</Label><Input type="date" value={recvDate} onChange={e => setRecvDate(e.target.value)} /></div>
+            <div><Label>Notes</Label><Input value={recvNotes} onChange={e => setRecvNotes(e.target.value)} placeholder="Money received from fisherman" /></div>
+            <Button onClick={handleReceive} className="w-full">Record Payment</Button>
+          </div>
+        </DialogContent>
       </Dialog>
     </div>
   );
