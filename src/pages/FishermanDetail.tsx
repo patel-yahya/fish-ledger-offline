@@ -332,6 +332,7 @@ export default function FishermanDetail() {
             <Button onClick={handleAdvance} className="w-full">Record Advance</Button>
           </div>
         </DialogContent>
+      </Dialog>
 
       {/* RECEIVE MONEY DIALOG */}
       <Dialog open={recvOpen} onOpenChange={setRecvOpen}>
